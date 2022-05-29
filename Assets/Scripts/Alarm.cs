@@ -7,41 +7,40 @@ using UnityEngine.Events;
 public class Alarm : MonoBehaviour
 {
     [SerializeField] private float _speedOfChanging;
-    [SerializeField] private UnityEvent _playedSound;
-    [SerializeField] private UnityEvent _stopedSound;
 
     private AudioSource _alarmSource;
     private float _minVolume = 0f;
     private float _maxVolume = 1f;
-    private bool _isEntred = false;
     private Coroutine _currentCoroutine;
+    private bool _isActivated;
 
     private void Start()
     {
         _alarmSource = GetComponent<AudioSource>();
     }
-
-    private void OnTriggerEnter2D(Collider2D collision)
+    
+    public void PlayerEntred()
     {
-        if(collision.TryGetComponent(out Player player))
+        _isActivated = !_isActivated;
+
+        if (_isActivated)
         {
-            _isEntred = true;
+            TryStopCoroutine(_currentCoroutine);
 
-            if(_currentCoroutine != null)
-                StopCoroutine(_currentCoroutine);
+            _currentCoroutine = (StartCoroutine(PlayAlarm()));
+        }
+        else
+        {
+            TryStopCoroutine(_currentCoroutine);
 
-            _currentCoroutine = StartCoroutine(PlayAlarm());
+            _currentCoroutine = (StartCoroutine(StopAlarm()));
         }
     }
 
-    private void OnTriggerExit2D(Collider2D collision)
+    private void TryStopCoroutine(Coroutine currentCoroutine)
     {
-        if (collision.TryGetComponent(out Player player))
-        {
-            _isEntred = false;
-            StopCoroutine(_currentCoroutine);
-            _currentCoroutine = StartCoroutine(StopAlarm());
-        }
+        if (currentCoroutine != null)
+            StopCoroutine(currentCoroutine);
     }
 
     private float ChangeVolume()
@@ -49,29 +48,28 @@ public class Alarm : MonoBehaviour
         return Mathf.MoveTowards(_minVolume, _maxVolume, _speedOfChanging * Time.deltaTime);              
     }
 
-    IEnumerator PlayAlarm()
+   private IEnumerator PlayAlarm()
     {
-        _playedSound?.Invoke();
+        _alarmSource.Play();
 
-        while(_isEntred)
+        while (_alarmSource.volume < _maxVolume)
         {
-            if(_alarmSource.volume < _maxVolume)
             _alarmSource.volume += ChangeVolume();
 
             yield return null;
         }
     }
 
-    IEnumerator StopAlarm()
+    private IEnumerator StopAlarm()
     {
-        while(_alarmSource.volume > 0f)
+        while (_alarmSource.volume > _minVolume)
         {
             _alarmSource.volume -= ChangeVolume();
 
             yield return null;
         }
 
-        if (_isEntred == false)
-            _stopedSound?.Invoke();
+        if(_alarmSource.volume == _minVolume)
+        _alarmSource.Stop();
     }
 }
