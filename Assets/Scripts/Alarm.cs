@@ -6,35 +6,35 @@ using UnityEngine.Events;
 [RequireComponent(typeof(AudioSource))]
 public class Alarm : MonoBehaviour
 {
+    [SerializeField] private House _house;
     [SerializeField] private float _speedOfChanging;
 
     private AudioSource _alarmSource;
     private float _minVolume = 0f;
     private float _maxVolume = 1f;
     private Coroutine _currentCoroutine;
-    private bool _isActivated;
 
     private void Start()
     {
         _alarmSource = GetComponent<AudioSource>();
     }
-    
-    public void PlayerEntred()
+
+    private void OnEnable()
     {
-        _isActivated = !_isActivated;
+        _house.PlayerEntred += OnPlayerEntred;
+    }
 
-        if (_isActivated)
-        {
-            TryStopCoroutine(_currentCoroutine);
+    private void OnDisable()
+    {
+        _house.PlayerEntred -= OnPlayerEntred;
+    }
 
-            _currentCoroutine = (StartCoroutine(PlayAlarm()));
-        }
+    private void OnPlayerEntred(bool isEntred)
+    {
+        if (isEntred)
+            _currentCoroutine = StartCoroutine(PlayAlarm());
         else
-        {
-            TryStopCoroutine(_currentCoroutine);
-
-            _currentCoroutine = (StartCoroutine(StopAlarm()));
-        }
+            _currentCoroutine = StartCoroutine(StopAlarm());
     }
 
     private void TryStopCoroutine(Coroutine currentCoroutine)
@@ -45,11 +45,13 @@ public class Alarm : MonoBehaviour
 
     private float ChangeVolume()
     {
-        return Mathf.MoveTowards(_minVolume, _maxVolume, _speedOfChanging * Time.deltaTime);              
+        return Mathf.MoveTowards(_minVolume, _maxVolume, _speedOfChanging * Time.deltaTime);
     }
 
-   private IEnumerator PlayAlarm()
+    private IEnumerator PlayAlarm()
     {
+        TryStopCoroutine(_currentCoroutine);
+
         _alarmSource.Play();
 
         while (_alarmSource.volume < _maxVolume)
@@ -62,6 +64,8 @@ public class Alarm : MonoBehaviour
 
     private IEnumerator StopAlarm()
     {
+        TryStopCoroutine(_currentCoroutine);
+
         while (_alarmSource.volume > _minVolume)
         {
             _alarmSource.volume -= ChangeVolume();
@@ -69,7 +73,7 @@ public class Alarm : MonoBehaviour
             yield return null;
         }
 
-        if(_alarmSource.volume == _minVolume)
-        _alarmSource.Stop();
+        if (_alarmSource.volume == _minVolume)
+            _alarmSource.Stop();
     }
 }

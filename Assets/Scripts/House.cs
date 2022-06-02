@@ -5,23 +5,21 @@ using UnityEngine.Events;
 
 public class House : MonoBehaviour
 {
-
-    [SerializeField] private UnityEvent _entered;
-    [SerializeField] private UnityEvent _exit;
+    public event UnityAction<bool> PlayerEntred;
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.TryGetComponent(out Player player))
         {
-            _entered?.Invoke();
+            PlayerEntred?.Invoke(true);
         }
     }
-
+     
     private void OnTriggerExit2D(Collider2D collision)
     {
         if (collision.TryGetComponent(out Player player))
         {
-            _exit?.Invoke();
+            PlayerEntred?.Invoke(false);
         }
     }
 }
