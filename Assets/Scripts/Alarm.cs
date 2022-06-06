@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Events;
 
 [RequireComponent(typeof(AudioSource))]
 public class Alarm : MonoBehaviour
@@ -31,10 +30,17 @@ public class Alarm : MonoBehaviour
 
     private void OnPlayerEntred(bool isEntred)
     {
+        TryStopCoroutine(_currentCoroutine);
+
         if (isEntred)
-            _currentCoroutine = StartCoroutine(PlayAlarm());
+        {
+            _alarmSource.Play();
+            _currentCoroutine = StartCoroutine(ChangeVolume(_maxVolume));
+        }
         else
-            _currentCoroutine = StartCoroutine(StopAlarm());
+        {
+            _currentCoroutine = StartCoroutine(ChangeVolume(_minVolume));
+        }
     }
 
     private void TryStopCoroutine(Coroutine currentCoroutine)
@@ -43,33 +49,11 @@ public class Alarm : MonoBehaviour
             StopCoroutine(currentCoroutine);
     }
 
-    private float ChangeVolume()
+    private IEnumerator ChangeVolume(float endVolume)
     {
-        return Mathf.MoveTowards(_minVolume, _maxVolume, _speedOfChanging * Time.deltaTime);
-    }
-
-    private IEnumerator PlayAlarm()
-    {
-        TryStopCoroutine(_currentCoroutine);
-
-        _alarmSource.Play();
-
-        while (_alarmSource.volume < _maxVolume)
+        while (endVolume != _alarmSource.volume)
         {
-            _alarmSource.volume += ChangeVolume();
-
-            yield return null;
-        }
-    }
-
-    private IEnumerator StopAlarm()
-    {
-        TryStopCoroutine(_currentCoroutine);
-
-        while (_alarmSource.volume > _minVolume)
-        {
-            _alarmSource.volume -= ChangeVolume();
-
+            _alarmSource.volume = Mathf.MoveTowards(_alarmSource.volume, endVolume, _speedOfChanging * Time.deltaTime);
             yield return null;
         }
 
